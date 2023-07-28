@@ -7,7 +7,6 @@
 #SBATCH --mail-user=ludo.a.levesque@gmail.com
 #SBATCH --mail-type=FAIL,END
 
-
 BIDS_path='/home/ludoal/scratch/BIDS_data/V1_BIDS_bet'
 bet_path='/home/ludoal/scratch/BIDS_data/V1_BIDS_bet'
 folder='func'

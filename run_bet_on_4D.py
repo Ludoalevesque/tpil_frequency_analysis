@@ -7,6 +7,7 @@ import subprocess
 import time
 from copy_header import copy_header
 import sys
+import argparse
 
 def remove_files(file_list):
     for file_path in file_list:
@@ -66,11 +67,27 @@ def main():
     # start timer
     start_time = time.time()
 
-    BIDS_path='/mnt/d/NeuroImaging/V1_BIDS'
-    bet_path='/mnt/d/NeuroImaging/V1_BIDS_bet'
-    folder="func"
-    temp_path='/mnt/d/NeuroImaging/temp'
+    parser = argparse.ArgumentParser(description="Skull-strip 4D NIfTI images.")
+    parser.add_argument("--BIDS_path", type=str, help="Path to the BIDS dataset.")
+    parser.add_argument("--bet_path", type=str, help="Path to the output directory for the brain-extracted images.")
+    parser.add_argument("--folder", type=str, help="Folder within each subject containing 4D NIfTI images.")
+    parser.add_argument("--temp_path", type=str, help="Temporary path for intermediate files.")
 
+    args = parser.parse_args()
+    BIDS_path = args.BIDS_path
+    bet_path = args.bet_path
+    folder = args.folder
+    temp_path = args.temp_path
+
+    # BIDS_path='/mnt/d/NeuroImaging/V1_BIDS'
+    # bet_path='/mnt/d/NeuroImaging/V1_BIDS_bet'
+    # folder="func"
+    # temp_path='/mnt/d/NeuroImaging/temp'
+
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
+
+        
     for sub_dir in os.listdir(BIDS_path):
         if not os.path.isdir(BIDS_path+'/'+sub_dir):
             continue

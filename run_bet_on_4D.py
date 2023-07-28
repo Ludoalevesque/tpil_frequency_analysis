@@ -2,45 +2,102 @@
 import nibabel as nib
 from nilearn import image
 import os
+import glob
 import subprocess
+import time
+from copy_header import copy_header
+import sys
+
+def remove_files(file_list):
+    for file_path in file_list:
+        try:
+            os.remove(file_path)
+            # print(f"File '{file_path}' removed successfully.")
+        except FileNotFoundError:
+            print(f"File '{file_path}' not found.")
+        except Exception as e:
+            print(f"Error removing file '{file_path}': {e}")
 
 
-img_name = "sub-02_acq-rest_dir-AP_epi.nii.gz"
-folder="fmap"
-og_path='/mnt/d/NeuroImaging/V1_BIDS/sub-02_test'
-og_img= os.path.join(og_path, folder, img_name)
+def skull_strip_4D(og_img, temp_path, bet_filepath):
+    count=0
+    file_list = [];
+    for img in image.iter_img(og_img):
 
-bet_filepath=f'/mnt/d/NeuroImaging/V1_BIDS/sub-02_bet/{folder}/{img_name}'
+        # Create one file per volume
+        vol_file_path= os.path.join(temp_path, f"vol_{count}.nii.gz")
+        nib.save(img, vol_file_path)
+        out_filepath= os.path.join(temp_path, f"vol_{count}_brain.nii.gz")
+        
+        # Create the fsl command line string
+        fsl_command = ["bet", vol_file_path, out_filepath]
 
-temp_path='/mnt/d/NeuroImaging/temp'
-if not os.path.exists(temp_path):
-    os.mkdir(temp_path)
+        # run bet
+        result = subprocess.run(fsl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-count=0
-file_list = [];
-for img in image.iter_img(og_img):
-    volume= f"vol_{count}"
-    in_filepath= os.path.join(temp_path, f"{volume}.nii.gz")
-    nib.save(img, in_filepath)
+        if result.returncode == 0:
+            print("FSL command executed successfully.")
+        else:
+            print("Error executing FSL command.")
+            print("Error message:", result.stderr.decode())
+            sys.exit(1) 
 
-    out_filepath= os.path.join(temp_path, f"{volume}_brain.nii.gz")
+        file_list.append(out_filepath)
+
+        count += 1 
+
+    # Create the new 4D image of the brain extracted data
+    bet_img = image.concat_imgs(file_list)
     
-    fsl_command = ["bet", in_filepath, out_filepath]
+    bet_path=os.path.dirname(bet_filepath)
+    if not os.path.exists(os.path.dirname(bet_path)):
+        os.makedirs(bet_path)
+    nib.save(bet_img, bet_filepath)
 
-    result = subprocess.run(fsl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # copy the header of the original file
+    copy_header(og_img, bet_filepath)
 
-    if result.returncode == 0:
-        print("FSL command executed successfully.")
-    else:
-        print("Error executing FSL command.")
-        print("Error message:", result.stderr.decode())
-
-    file_list.append(out_filepath)
-
-    count += 1 
-
-bet_img = image.concat_imgs(file_list)
-nib.save(bet_img, bet_filepath)
+    # Clear the temp folder
+    remove_files(file_list)
 
 
+def main():
+        
+    # start timer
+    start_time = time.time()
 
+    BIDS_path='/mnt/d/NeuroImaging/V1_BIDS'
+    bet_path='/mnt/d/NeuroImaging/V1_BIDS_bet'
+    folder="func"
+    temp_path='/mnt/d/NeuroImaging/temp'
+
+    for sub_dir in os.listdir(BIDS_path):
+        if not os.path.isdir(BIDS_path+'/'+sub_dir):
+            continue
+
+        og_pattern = os.path.join(BIDS_path,sub_dir,folder)
+        for file in os.listdir(og_pattern):
+            if file.endswith('nii.gz'):
+                og_img = os.path.join(og_pattern,file)
+
+        if og_img != os.path.join(og_pattern,file):
+            print("No file found with the 'nii.gz' extension in ", og_pattern)
+
+        bet_pattern = os.path.join(bet_path,sub_dir,folder)
+        for file in os.listdir(bet_pattern):
+            if file.endswith('nii.gz'):
+                bet_filepath = os.path.join(bet_pattern,file)
+        
+        if bet_filepath !=os.path.join(bet_pattern,file):
+            print("No file found with the 'nii.gz' extension in ", bet_pattern)
+        
+        skull_strip_4D(og_img, temp_path, bet_filepath)
+        print(sub_dir, ' finished')
+
+
+    end_time= time.time()
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time:.6f} seconds")
+
+if __name__ == '__main__':
+    main()

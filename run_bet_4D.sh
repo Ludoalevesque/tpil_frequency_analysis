@@ -12,5 +12,7 @@ bet_path='/home/ludoal/scratch/BIDS_data/V1_BIDS_bet'
 folder='func'
 temp_path='/home/ludoal/scratch'
 
+module load StdEnv/2020  gcc/9.3.0  cuda/11.0 fsl/6.0.4
+
 # Call the Python script with the arguments
 python run_bet_on_4D.py "$BIDS_path" "$bet_path" "$folder" "$temp_path"

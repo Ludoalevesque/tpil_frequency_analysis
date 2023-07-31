@@ -2,7 +2,6 @@
 import nibabel as nib
 from nilearn import image
 import os
-import glob
 import subprocess
 import time
 from copy_header import copy_header

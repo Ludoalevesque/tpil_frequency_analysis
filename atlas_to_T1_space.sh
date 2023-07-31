@@ -8,7 +8,6 @@
 #SBATCH --mail-type=FAIL,END
 
 root=$HOME/scratch
-native_T1="${root}/BIDS_data/sub-02/anat/sub-02_T1w.nii.gz"
 atlas="${root}/Atlases/BN_Atlas_246_1mm.nii.gz"
 bet_T1="${root}/BIDS_data/sub-02/anat/sub-02_T1w_brain.nii.gz"
 
